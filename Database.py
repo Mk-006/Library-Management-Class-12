@@ -86,7 +86,8 @@ def Fill_Table():
 (1007, 'user7', 'pass456', 'Robert Wilson', 'robert@example.com', '6662224444', '456 Birch Rd', TRUE, '2023-07-01', '2023-12-31', FALSE),\
 (1008, 'user8', 'pass789', 'Amanda Taylor', 'amanda@example.com', '1112223333', '234 Pine St', TRUE, '2023-08-01', '2023-12-31', FALSE),\
 (1009, 'user9', 'passabc', 'William Martinez', 'william@example.com', '8887776666', '567 Oak Ave', TRUE, '2023-09-01', '2023-12-31', FALSE),\
-(1010, 'user10', 'passxyz', 'Olivia Hernandez', 'olivia@example.com', '5559994444', '678 Elm Rd', TRUE, '2023-10-01', '2023-12-31', TRUE)")
+(1010, 'Admin', 'AdminPassword', 'Olivia Hernandez', 'olivia@example.com', '5559994444', '678 Elm Rd', TRUE, '2023-10-01', '2023-12-31', TRUE)\
+")#(1011, 'Clean', 'Password', 'Mayank Kumar', '')")
     Mysql_Connection.commit()
     Mysql_Cursor.execute("INSERT INTO Books (Barcode,title, author, genre, publication_date, rating, location, availability_status) VALUES\
 (100001,'The Great Gatsby', 'F. Scott Fitzgerald', 'Classic', '2021-01-15', 4.2, '8000.1', TRUE),\
@@ -94,7 +95,7 @@ def Fill_Table():
 (100003,'1984', 'George Orwell', 'Dystopian', '2019-05-22', 4.7, '800.003', TRUE),\
 (100004,'Pride and Prejudice', 'Jane Austen', 'Romance', '2018-11-10', 4.0, '800.004', TRUE),\
 (100005,'The Hobbit', 'J.R.R. Tolkien', 'Fantasy', '2022-03-18', 4.3, '800.005', TRUE),\
-(100006,'Harry Potter and the Sorcerers Stone', 'J.K. Rowling', 'Fantasy', '2021-06-30', 4.8, '800.006', FALSE),\
+(100006,'Harry Potter and the Sorcerers Stone', 'J.K. Rowling', 'Fantasy', '2021-06-30', 4.8, '800.006', TRUE),\
 (100007,'The Catcher in the Rye', 'J.D. Salinger', 'Coming of Age', '2023-02-08', 3.9, '800.007', TRUE),\
 (100008,'Brave New World', 'Aldous Huxley', 'Science Fiction', '2019-09-25', 4.1, '800.008', TRUE),\
 (100009,'The Lord of the Rings', 'J.R.R. Tolkien', 'Fantasy', '2020-08-12', 4.6, '800.009', TRUE),\
