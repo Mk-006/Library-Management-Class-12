@@ -42,7 +42,7 @@ membership_end_date DATE,\
 Admin BOOLEAN NOT NULL);")
     Mysql_Connection.commit()
     Mysql_Cursor.execute("CREATE TABLE if not exists Books (\
-Barcode INT PRIMARY KEY,\
+ISBN INT PRIMARY KEY,\
 title VARCHAR(255) NOT NULL,\
 author VARCHAR(255) NOT NULL,\
 genre VARCHAR(255) NOT NULL,\
@@ -53,12 +53,12 @@ availability_status BOOLEAN NOT NULL);")
     Mysql_Connection.commit()
     Mysql_Cursor.execute("CREATE TABLE if not exists Borrowings (\
 borrowing_id INT AUTO_INCREMENT PRIMARY KEY,\
-Barcode INT NOT NULL,\
+ISBN INT NOT NULL,\
 Card_ID INT NOT NULL,\
 borrowing_date DATE NOT NULL,\
 due_date DATE NOT NULL,\
 return_date DATE,\
-FOREIGN KEY (Barcode) REFERENCES Books(Barcode),\
+FOREIGN KEY (ISBN) REFERENCES Books(ISBN),\
 FOREIGN KEY (Card_ID) REFERENCES Users(Card_id));") 
     Mysql_Connection.commit()
     Mysql_Cursor.execute("CREATE TABLE IF NOT EXISTS Fines (\
@@ -89,7 +89,7 @@ def Fill_Table():
 (1010, 'Admin', 'AdminPassword', 'Olivia Hernandez', 'olivia@example.com', '5559994444', '678 Elm Rd', TRUE, '2023-10-01', '2023-12-31', TRUE)\
 ")#(1011, 'Clean', 'Password', 'Mayank Kumar', '')")
     Mysql_Connection.commit()
-    Mysql_Cursor.execute("INSERT INTO Books (Barcode,title, author, genre, publication_date, rating, location, availability_status) VALUES\
+    Mysql_Cursor.execute("INSERT INTO Books (ISBN,title, author, genre, publication_date, rating, location, availability_status) VALUES\
 (100001,'The Great Gatsby', 'F. Scott Fitzgerald', 'Classic', '2021-01-15', 4.2, '8000.1', TRUE),\
 (100002,'To Kill a Mockingbird', 'Harper Lee', 'Classic', '2020-09-05', 4.5, '800.002', TRUE),\
 (100003,'1984', 'George Orwell', 'Dystopian', '2019-05-22', 4.7, '800.003', TRUE),\
@@ -101,7 +101,7 @@ def Fill_Table():
 (100009,'The Lord of the Rings', 'J.R.R. Tolkien', 'Fantasy', '2020-08-12', 4.6, '800.009', TRUE),\
 (100010,'Jane Eyre', 'Charlotte Brontë', 'Gothic', '2023-04-04', 4.4, '800.010', TRUE)")
     Mysql_Connection.commit()
-    Mysql_Cursor.execute("INSERT INTO Borrowings (Barcode, Card_ID, borrowing_date, due_date, return_date) VALUES\
+    Mysql_Cursor.execute("INSERT INTO Borrowings (ISBN, Card_ID, borrowing_date, due_date, return_date) VALUES\
 (100001, 1001, '2023-05-10', '2023-05-17', '2023-05-15'),\
 (100003, 1002, '2023-04-20', '2023-04-27', NULL),\
 (100005, 1003, '2023-03-15', '2023-03-22', NULL),\
