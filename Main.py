@@ -239,16 +239,16 @@ def Admin():
         if Choice==1:
             Add_Book()
         elif Choice==2:
-            Barcode = Input("Barcode:","int","Barcode Should be a number")
-            if Check_if_Book_Exsists(Barcode):
-                Mysql_Cursor.execute(f"Select * from Books where Barcode = {Barcode}")
+            ISBN = Input("ISBN:","int","ISBN Should be a number")
+            if Check_if_Book_Exsists(ISBN):
+                Mysql_Cursor.execute(f"Select * from Books where ISBN = {ISBN}")
                 Data=Mysql_Cursor.fetchall()
                 Mysql_Cursor.execute(f"desc Books")
                 Top=[i[0] for i in Mysql_Cursor.fetchall()]
                 print(create_table(Data,Top) )
-                Edit_Book(Barcode)
+                Edit_Book(ISBN)
             else:
-                print("║Invalid Barcode")
+                print("║Invalid ISBN")
         elif Choice==3:
             Manage_Users()
         elif Choice==4:
@@ -280,8 +280,8 @@ def Admin():
         else:
             print("║Invalid choice. Please select a valid option.")
 
-def Check_if_Book_Exsists(Barcode):
-    Mysql_Cursor.execute(f"select Count(*) from Books where Barcode='{Barcode}'")
+def Check_if_Book_Exsists(ISBN):
+    Mysql_Cursor.execute(f"select Count(*) from Books where ISBN='{ISBN}'")
     Count=Mysql_Cursor.fetchone()[0]
     if Count==1:
         return True
@@ -297,7 +297,7 @@ def Check_if_User_Exsists(Card_ID):
 
 def Search_Book():
     while True:
-        Make_Box("Search By",["Title","Author","Genre","Publication Date","Rating","Availability","Barcode","Back to Main Menu"],"╠")
+        Make_Box("Search By",["Title","Author","Genre","Publication Date","Rating","Availability","ISBN","Back to Main Menu"],"╠")
         print("║Multiple options can be selected using a Comma eg:1,5")
         Choices=Input("Choice:",Type="str",Error="Your Choice Should be a Number").split(",")
         try:
@@ -339,8 +339,8 @@ def Search_Book():
             Availability = Input("Availability (TRUE/FALSE):")
             Query_Builder.append(f"availability_status = {Availability.upper()}")
         if 7 in Choices:
-            Barcode = Input("Barcode:","int")
-            Query_Builder.append(f"Barcode = {Barcode}")
+            ISBN = Input("ISBN:","int")
+            Query_Builder.append(f"ISBN = {ISBN}")
         if len(Query_Builder)!=0:
             Query="SELECT * FROM Books WHERE " + " AND ".join(Query_Builder)
             Mysql_Cursor.execute(Query)
@@ -364,16 +364,16 @@ def Borrow(Card_Id):
     elif Fine(Card_Id):
         print(f"║{Dif[Login_Type][0]} has unpaid Fines. Please Pay the fines before Borrowing a new one.")
     else:
-        Barcode = Input("Barcode:","int")
-        if Check_if_Book_Exsists(Barcode):
-            Mysql_Cursor.execute(f"SELECT availability_status FROM Books WHERE Barcode = {Barcode}")
+        ISBN = Input("ISBN:","int")
+        if Check_if_Book_Exsists(ISBN):
+            Mysql_Cursor.execute(f"SELECT availability_status FROM Books WHERE ISBN = {ISBN}")
             availability = Mysql_Cursor.fetchone()
             if availability[0] == 1:
-                Mysql_Cursor.execute(f"INSERT INTO Borrowings (Barcode, card_id, borrowing_date, due_date) VALUES ({Barcode}, {Card_Id}, NOW(), NOW() + INTERVAL 7 DAY)")
+                Mysql_Cursor.execute(f"INSERT INTO Borrowings (ISBN, card_id, borrowing_date, due_date) VALUES ({ISBN}, {Card_Id}, NOW(), NOW() + INTERVAL 7 DAY)")
                 Mysql_Connection.commit()
-                Mysql_Cursor.execute(f"UPDATE Books SET availability_status = 0 WHERE Barcode = {Barcode}")
+                Mysql_Cursor.execute(f"UPDATE Books SET availability_status = 0 WHERE ISBN = {ISBN}")
                 Mysql_Connection.commit()
-                Mysql_Cursor.execute(f"Select * from Books where Barcode = {Barcode}")
+                Mysql_Cursor.execute(f"Select * from Books where ISBN = {ISBN}")
                 Data=Mysql_Cursor.fetchall()
                 Mysql_Cursor.execute(f"desc Books")
                 Top=[i[0] for i in Mysql_Cursor.fetchall()]
@@ -382,19 +382,18 @@ def Borrow(Card_Id):
             else:
                 print(f"║{Dif[Login_Type][2]} the book is not available for borrowing.")
         else:
-            print("║Book with that barcode dosent exist")
+            print("║Book with that ISBN dosent exist")
 
 def Return(Card_Id):
-        #Barcode = Input("Barcode:","int")
         Mysql_Cursor.execute(f"SELECT * FROM Borrowings WHERE Card_Id = {Card_Id} AND return_date IS NULL")
         borrowing_data = Mysql_Cursor.fetchone()
-        Barcode=borrowing_data[1]
+        ISBN=borrowing_data[1]
         if borrowing_data:
-            Mysql_Cursor.execute(f"UPDATE Books SET availability_status = 1 WHERE Barcode = {Barcode}")
+            Mysql_Cursor.execute(f"UPDATE Books SET availability_status = 1 WHERE ISBN = {ISBN}")
             Mysql_Connection.commit()
             Mysql_Cursor.execute(f"UPDATE Borrowings SET return_date = NOW() WHERE borrowing_id = {borrowing_data[0]}")
             Mysql_Connection.commit()
-            Mysql_Cursor.execute(f"Select * from Books where Barcode = {Barcode}")
+            Mysql_Cursor.execute(f"Select * from Books where ISBN = {ISBN}")
             Data=Mysql_Cursor.fetchall()
             Mysql_Cursor.execute(f"desc Books")
             Top=[i[0] for i in Mysql_Cursor.fetchall()]
@@ -404,18 +403,18 @@ def Return(Card_Id):
             print("║The book isnt borrowed or it has already been returned.")
 
 def Last_Checkout(Card_Id):
-        Mysql_Cursor.execute(f"SELECT Books.Barcode, title, author, genre, publication_date, rating, location, Borrowings.borrowing_date ,due_date  FROM Books INNER JOIN Borrowings ON Books.Barcode = Borrowings.Barcode WHERE Card_Id = {Card_Id} AND return_date IS NULL ORDER BY Borrowings.borrowing_date DESC LIMIT 1")
+        Mysql_Cursor.execute(f"SELECT Books.ISBN, title, author, genre, publication_date, rating, location, Borrowings.borrowing_date ,due_date  FROM Books INNER JOIN Borrowings ON Books.ISBN = Borrowings.ISBN WHERE Card_Id = {Card_Id} AND return_date IS NULL ORDER BY Borrowings.borrowing_date DESC LIMIT 1")
         last_checked_out_book= Mysql_Cursor.fetchall()
         if last_checked_out_book:
-            print(create_table(last_checked_out_book, ["Book id","Title","Author","Genre","publication date","rating", "location","borrowing date","Due Date"]))
+            print(create_table(last_checked_out_book, ["ISBN","Title","Author","Genre","publication date","rating", "location","borrowing date","Due Date"]))
         else:
             print("║No books have been Checked out")
 
 def All_Checkout_User(Card_Id):
-        Mysql_Cursor.execute(f"SELECT Books.Barcode, title, author, genre, publication_date, rating, location, Borrowings.borrowing_date , Borrowings.due_date ,Borrowings.return_date FROM Books INNER JOIN Borrowings ON Books.Barcode = Borrowings.Barcode WHERE Borrowings.card_id = {Card_Id} ORDER BY Borrowings.borrowing_date DESC")
+        Mysql_Cursor.execute(f"SELECT Books.ISBN, title, author, genre, publication_date, rating, location, Borrowings.borrowing_date , Borrowings.due_date ,Borrowings.return_date FROM Books INNER JOIN Borrowings ON Books.ISBN = Borrowings.ISBN WHERE Borrowings.card_id = {Card_Id} ORDER BY Borrowings.borrowing_date DESC")
         checkout_history = Mysql_Cursor.fetchall()
         if checkout_history:
-            print(create_table(checkout_history, ["Book id","Title","Author","Genre","publication date","rating", "location","borrowing date","Due Date","Return Date"]))
+            print(create_table(checkout_history, ["ISBN","Title","Author","Genre","publication date","rating", "location","borrowing date","Due Date","Return Date"]))
         else:
             print("║No checkout history found for user.")
 
@@ -544,7 +543,7 @@ def Change_Details(Card_Id):
         else:
             print("║Invalid choice!")
 
-def Del_User(Card_Id): 
+def Del_User(Card_Id):
     Mysql_Cursor.execute(f"SELECT count(*) FROM Borrowings WHERE Card_Id = {Card_Id} AND return_date IS NULL")
     borrowed_books = Mysql_Cursor.fetchone()[0]
     if borrowed_books==1:
@@ -586,20 +585,20 @@ def Add_Book():
         else:
             print("║Enter True or False")
     while True:
-        Barcode=random.randint(100000,1000000) 
-        Mysql_Cursor.execute(f"select Count(*) from Books where Barcode='{Barcode}'")
+        ISBN=random.randint(100000,1000000) 
+        Mysql_Cursor.execute(f"select Count(*) from Books where ISBN='{ISBN}'")
         if Mysql_Cursor.fetchone()[0]==0: break
-    Mysql_Cursor.execute(f"INSERT INTO Books (Barcode,title, author, genre, publication_date, rating, location, availability_status) VALUES ({Barcode},'{Title}', '{Author}', '{Genre}', '{Publication_Date}', {Rating:.2f}, {Location}, {availability_status})")
+    Mysql_Cursor.execute(f"INSERT INTO Books (ISBN,title, author, genre, publication_date, rating, location, availability_status) VALUES ({ISBN},'{Title}', '{Author}', '{Genre}', '{Publication_Date}', {Rating:.2f}, {Location}, {availability_status})")
     Mysql_Connection.commit()
-    Mysql_Cursor.execute(f"Select * from Books where Barcode='{Barcode}'")
+    Mysql_Cursor.execute(f"Select * from Books where ISBN='{ISBN}'")
     Results = Mysql_Cursor.fetchall()
     Mysql_Cursor.execute(f"desc Books")
     Top=[i[0] for i in Mysql_Cursor.fetchall()]
     print(create_table(Results,Top) )
     print("║Book added successfully!")
 
-def Edit_Book(Barcode):
-        Mysql_Cursor.execute(f"SELECT * FROM Books WHERE Barcode = {Barcode}")
+def Edit_Book(ISBN):
+        Mysql_Cursor.execute(f"SELECT * FROM Books WHERE ISBN = {ISBN}")
         book_data = Mysql_Cursor.fetchone() 
         if book_data:
             while True:
@@ -643,10 +642,10 @@ def Edit_Book(Barcode):
                     Location = Input("Location (0000.0000 - 9999.9999):")
                     Query_Builder.append(f"Location = '{Location}'")
                 if len(Query_Builder)!=0:
-                    Query="Update Books SET " + " , ".join(Query_Builder) + f" WHERE Barcode='{Barcode}';"
+                    Query="Update Books SET " + " , ".join(Query_Builder) + f" WHERE ISBN='{ISBN}';"
                     Mysql_Cursor.execute(Query)
                     Mysql_Connection.commit()
-                    Mysql_Cursor.execute(f"select * from Books where Barcode='{Barcode}'")
+                    Mysql_Cursor.execute(f"select * from Books where ISBN='{ISBN}'")
                     Results = Mysql_Cursor.fetchall()
                     Mysql_Cursor.execute(f"desc Books")
                     Top=[i[0] for i in Mysql_Cursor.fetchall()]
