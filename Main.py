@@ -36,13 +36,16 @@ except:
     import Database
     Database.Fill_Table()
     Mysql_Cursor.execute("use Library")
-if sys.argv[-1]=="--Reinitialize":
+if "--Reinitialize" in sys.argv:
     import Database
     Database.Fill_Table()
     Mysql_Cursor.execute("use Library")
 DefSerch="CardID"
 def clear_terminal():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    if "--Testing" in sys.argv:
+        pass
+    else:
+        os.system('cls' if os.name == 'nt' else 'clear')
 def create_table(data,Table):
     data.insert(0,Table)
     num_columns = len(data[0])
@@ -185,6 +188,8 @@ def Auth():
             Login_Type="User"
             break
         elif Choice==321:
+            Mysql_Cursor.close()
+            Mysql_Connection.close()
             exit()
         else:
             print("║Invalid Option")
@@ -216,6 +221,7 @@ def User():
             Change_Details(Card_ID)
         elif Choice==8:
             Del_User(Card_ID)
+            break
         elif Choice == 9:
             print("║Exiting the Library Management System.")
             break
@@ -359,26 +365,30 @@ def Borrow(Card_Id):
         print(f"║{Dif[Login_Type][0]} has unpaid Fines. Please Pay the fines before Borrowing a new one.")
     else:
         Barcode = Input("Barcode:","int")
-        Mysql_Cursor.execute(f"SELECT availability_status FROM Books WHERE Barcode = {Barcode}")
-        availability = Mysql_Cursor.fetchone()
-        if availability[0] == 1:
-            Mysql_Cursor.execute(f"INSERT INTO Borrowings (Barcode, card_id, borrowing_date, due_date) VALUES ({Barcode}, {Card_Id}, NOW(), NOW() + INTERVAL 7 DAY)")
-            Mysql_Connection.commit()
-            Mysql_Cursor.execute(f"UPDATE Books SET availability_status = 0 WHERE Barcode = {Barcode}")
-            Mysql_Connection.commit()
-            Mysql_Cursor.execute(f"Select * from Books where Barcode = {Barcode}")
-            Data=Mysql_Cursor.fetchall()
-            Mysql_Cursor.execute(f"desc Books")
-            Top=[i[0] for i in Mysql_Cursor.fetchall()]
-            print(create_table(Data,Top) )
-            print(f"║Book {Dif[Login_Type][1]} successfully!")
+        if Check_if_Book_Exsists(Barcode):
+            Mysql_Cursor.execute(f"SELECT availability_status FROM Books WHERE Barcode = {Barcode}")
+            availability = Mysql_Cursor.fetchone()
+            if availability[0] == 1:
+                Mysql_Cursor.execute(f"INSERT INTO Borrowings (Barcode, card_id, borrowing_date, due_date) VALUES ({Barcode}, {Card_Id}, NOW(), NOW() + INTERVAL 7 DAY)")
+                Mysql_Connection.commit()
+                Mysql_Cursor.execute(f"UPDATE Books SET availability_status = 0 WHERE Barcode = {Barcode}")
+                Mysql_Connection.commit()
+                Mysql_Cursor.execute(f"Select * from Books where Barcode = {Barcode}")
+                Data=Mysql_Cursor.fetchall()
+                Mysql_Cursor.execute(f"desc Books")
+                Top=[i[0] for i in Mysql_Cursor.fetchall()]
+                print(create_table(Data,Top) )
+                print(f"║Book {Dif[Login_Type][1]} successfully!")
+            else:
+                print(f"║{Dif[Login_Type][2]} the book is not available for borrowing.")
         else:
-            print(f"║{Dif[Login_Type][2]} the book is not available for borrowing.")
+            print("║Book with that barcode dosent exist")
 
 def Return(Card_Id):
-        Barcode = Input("Barcode:","int")
-        Mysql_Cursor.execute(f"SELECT * FROM Borrowings WHERE Barcode = {Barcode} AND Card_Id = {Card_Id} AND return_date IS NULL")
+        #Barcode = Input("Barcode:","int")
+        Mysql_Cursor.execute(f"SELECT * FROM Borrowings WHERE Card_Id = {Card_Id} AND return_date IS NULL")
         borrowing_data = Mysql_Cursor.fetchone()
+        Barcode=borrowing_data[1]
         if borrowing_data:
             Mysql_Cursor.execute(f"UPDATE Books SET availability_status = 1 WHERE Barcode = {Barcode}")
             Mysql_Connection.commit()
@@ -476,9 +486,9 @@ def User_Data(Card_Id):
             print(f"""╠{"═"*(S)}╝""")
 
 def Change_Details(Card_Id):
-    if Login_Type=="User": Make_Box("Change",["Password","Email","Contact","Address","Username","Name","Back to Main Menu"],"╠")
-    else: Make_Box("Edit Account",["Password","Email","Contact","Address","Username","Name","Back to Main Menu"],"╠") 
     while True:
+        if Login_Type=="User": Make_Box("Change",["Password","Email","Contact","Address","Username","Name","Back to Main Menu"],"╠")
+        else: Make_Box("Edit Account",["Password","Email","Contact","Address","Username","Name","Back to Main Menu"],"╠") 
         change_choice=Input("Choice","int","Your Choice Should be a Number")
         if change_choice == 1:
             new_password = Input("New password:")
@@ -487,11 +497,17 @@ def Change_Details(Card_Id):
             print("║Password changed successfully!")
 
         elif change_choice == 2:
-            new_email = Input("New email:")
-            Mysql_Cursor.execute(f"UPDATE Users SET email = '{new_email}' WHERE Card_ID = {Card_Id}")
-            Mysql_Connection.commit()
-            print("║Email changed successfully!")
-
+            New_Email=Input("Emai Address:")
+            if New_Email.count('@') == 1 and New_Email.count('.') >= 1:
+                username, domain = New_Email.split('@')
+                domain_name, extension = domain.split('.')
+                if username and domain_name and extension:
+                    Mysql_Cursor.execute(f"UPDATE Users SET email = '{New_Email}' WHERE Card_ID = {Card_Id}")
+                    Mysql_Connection.commit()
+                    print("║Email changed successfully!")
+                else:print("║Invalid email address.Dosen't follow email syntax")
+            else:print("║Invalid email address.Dosen't follow email syntax")
+            
         elif change_choice == 3:
             while True:
                 new_contact=Input("Phone Number:","int","Enter A 10 Digit Number")
@@ -538,12 +554,13 @@ def Del_User(Card_Id):
     if fine_total > 0:
         print("║User cannot be deleted due to outstanding fines.")
         return
-    Mysql_Cursor.execute(f"DELETE FROM Fines WHERE borrowing_id IN (SELECT borrowing_id FROM Borrowings WHERE Card_Id = {Card_Id})")
+    Mysql_Cursor.execute(f"DELETE FROM Fines WHERE Card_Id = {Card_Id}")
+    Mysql_Connection.commit()
     Mysql_Cursor.execute(f"DELETE FROM Borrowings WHERE Card_Id = {Card_Id}")
+    Mysql_Connection.commit()
     Mysql_Cursor.execute(f"DELETE FROM Users WHERE Card_ID = {Card_Id}")
     Mysql_Connection.commit() 
     print("║User deleted successfully.")
-    exit()
 
 def Add_Book():
     Title=Input("Title:")
@@ -562,13 +579,23 @@ def Add_Book():
             break
         except:
             pass
-    availability_status=Input("Availability_status:").upper()
     while True:
-                Barcode=random.randint(100000,1000000)
-                Mysql_Cursor.execute(f"select Count(*) from Users where Card_Id='{Card_ID}'")
-                if Mysql_Cursor.fetchall()[0][0]==0: break
+        availability_status=Input("Availability status:").upper()
+        if availability_status=="TRUE" or availability_status=="FALSE":
+            break
+        else:
+            print("║Enter True or False")
+    while True:
+        Barcode=random.randint(100000,1000000) 
+        Mysql_Cursor.execute(f"select Count(*) from Books where Barcode='{Barcode}'")
+        if Mysql_Cursor.fetchone()[0]==0: break
     Mysql_Cursor.execute(f"INSERT INTO Books (Barcode,title, author, genre, publication_date, rating, location, availability_status) VALUES ({Barcode},'{Title}', '{Author}', '{Genre}', '{Publication_Date}', {Rating:.2f}, {Location}, {availability_status})")
     Mysql_Connection.commit()
+    Mysql_Cursor.execute(f"Select * from Books where Barcode='{Barcode}'")
+    Results = Mysql_Cursor.fetchall()
+    Mysql_Cursor.execute(f"desc Books")
+    Top=[i[0] for i in Mysql_Cursor.fetchall()]
+    print(create_table(Results,Top) )
     print("║Book added successfully!")
 
 def Edit_Book(Barcode):
@@ -576,7 +603,7 @@ def Edit_Book(Barcode):
         book_data = Mysql_Cursor.fetchone() 
         if book_data:
             while True:
-                Make_Box("Edit",["Title","Author","Genre","Publication Date","Rating","Location","Availability","Back to Main Menu"],"╠")
+                Make_Box("Edit",["Title","Author","Genre","Publication Date","Rating","Availability","Location","Back to Main Menu"],"╠")
                 print("║Multiple options can be selected using a Comma eg:1,5")
                 Choices=Input("Choice:",Type="str",Error="Your Choice Should be a Number").split(",")
                 try:
@@ -605,7 +632,12 @@ def Edit_Book(Barcode):
                             print("║Rating should be between 0.00 and 5.00")
                     Query_Builder.append(f"rating = {Rating:.2f}")
                 if 6 in Choices:
-                    Availability = Input("Availability (TRUE/FALSE):")
+                    while True:
+                        Availability=Input("Availability status:").upper()
+                        if Availability=="TRUE" or Availability=="FALSE":
+                            break
+                        else:
+                            print("║Enter True or False")
                     Query_Builder.append(f"availability_status = {Availability.upper()}")
                 if 7 in Choices:
                     Location = Input("Location (0000.0000 - 9999.9999):")
@@ -792,5 +824,3 @@ while True:
     if Login_Type=="Admin":Admin()
     else: User()
     clear_terminal()
-Mysql_Cursor.close()
-Mysql_Connection.close()
