@@ -60,14 +60,22 @@ def create_table(data,Table):
             table.append(horizontal_line) 
     table.append("╠" + "╩".join("═" * (width + 2) for width in column_widths) + "╝") 
     return "\n".join(table)
-def Input(Text="",Type="str",Error=""):
+def Input(Text="",Type="str",Error="",Max_Check=True):
     if len(Text)>0: Text="║"+Text+"\n"
     if len(Error)>0: Error="║"+Error+"\n"
     Output=None
     while True:
         try:
             if Type == "str":
-                Output = input(Text + "║»")
+                while True:
+                    Output = input(Text + "║»")
+                    Exclude=["\\","--"]
+                    if len(Output)>254 and Max_Check:
+                        print("║Lenght of string cant be more than 254") 
+                    elif any(element in Output for element in Exclude):
+                        print("║Input cant have",str([element for element in Exclude if element in Output]).replace("[","").replace("]","").replace(","," or"))
+                    else:
+                        break
             elif Type == "int":
                 Output = int(input(Text + "║»"))
             elif Type == "float":
@@ -138,7 +146,7 @@ def Auth():
         if Choice==1:
             print("║Logging In")
             Username=Input("Username:")
-            Password=Input("Password")
+            Password=Input("Password:")
             Mysql_Cursor.execute(f"select Count(*) from Users where username='{Username}' and password='{Password}';")
             Exsists=Mysql_Cursor.fetchall()[0][0]
             if Exsists==1:
@@ -196,7 +204,6 @@ def Auth():
     clear_terminal()
     return Login_Type,Card_ID
 
-
 def User():
     First=True
     while True:
@@ -220,8 +227,8 @@ def User():
         elif Choice==7:
             Change_Details(Card_ID)
         elif Choice==8:
-            Del_User(Card_ID)
-            break
+            if Del_User(Card_ID)=="Continue": pass
+            else: break
         elif Choice == 9:
             print("║Exiting the Library Management System.")
             break
@@ -387,8 +394,8 @@ def Borrow(Card_Id):
 def Return(Card_Id):
         Mysql_Cursor.execute(f"SELECT * FROM Borrowings WHERE Card_Id = {Card_Id} AND return_date IS NULL")
         borrowing_data = Mysql_Cursor.fetchone()
-        ISBN=borrowing_data[1]
         if borrowing_data:
+            ISBN=borrowing_data[1]
             Mysql_Cursor.execute(f"UPDATE Books SET availability_status = 1 WHERE ISBN = {ISBN}")
             Mysql_Connection.commit()
             Mysql_Cursor.execute(f"UPDATE Borrowings SET return_date = NOW() WHERE borrowing_id = {borrowing_data[0]}")
@@ -427,7 +434,7 @@ def Fine(Card_Id):
         return Fine
     
 def Fines_calculation():
-    Mysql_Cursor.execute("SELECT * FROM Borrowings WHERE due_date < CURDATE() AND return_date IS NOT NULL")
+    Mysql_Cursor.execute("SELECT * FROM Borrowings WHERE due_date < CURDATE() AND return_date IS NULL")
     Overdue = Mysql_Cursor.fetchall()
     for Borrowing in Overdue:
         Borrowing_id = Borrowing[0]
@@ -546,13 +553,24 @@ def Change_Details(Card_Id):
 def Del_User(Card_Id):
     Mysql_Cursor.execute(f"SELECT count(*) FROM Borrowings WHERE Card_Id = {Card_Id} AND return_date IS NULL")
     borrowed_books = Mysql_Cursor.fetchone()[0]
+    def Override():
+        if Login_Type=="Admin":
+            Over=Input("Override and Delete account anyways?(y/n)")
+            if Over.upper()=="Y":
+                pass
+            elif Over.upper()=="N":
+                return "Exit"
+            else:
+                Override()
+        else:
+            return "Exit"
     if borrowed_books==1:
         print("║User cannot be deleted as they have borrowed books.")
-        return
+        if Override()=="Exit": return "Continue"
     fine_total = Fine(Card_Id)
     if fine_total > 0:
         print("║User cannot be deleted due to outstanding fines.")
-        return
+        if Override()=="Exit": return "Continue" 
     Mysql_Cursor.execute(f"DELETE FROM Fines WHERE Card_Id = {Card_Id}")
     Mysql_Connection.commit()
     Mysql_Cursor.execute(f"DELETE FROM Borrowings WHERE Card_Id = {Card_Id}")
@@ -711,6 +729,7 @@ def Add_User():
         else: print("║Invalid Number,Enter A 10 Digit Number")
     Address=Input("Address:")
     while True:
+
         Username=Input("Username:")
         Mysql_Cursor.execute(f"select Count(*) from Users where username='{Username}'")
         Exsists=Mysql_Cursor.fetchall()[0][0]
@@ -794,7 +813,7 @@ def Print_Database():
 def Database():
     while True:
         try:
-            Command=Input()
+            Command=Input(Max_Check=False)
             Commit=["ALTER","REPAIR","UPDATE","DELETE","INSERT"]
             Fetch=["DESC","DESCRIBE","SELECT"]
             if Command.upper()=="EXIT":
@@ -819,6 +838,7 @@ def Database():
         except:
             pass
 while True:
+    clear_terminal()
     Login_Type,Card_ID=Auth()
     if Login_Type=="Admin":Admin()
     else: User()
