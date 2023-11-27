@@ -25,7 +25,6 @@ except:
             except:
                 pass
 Mysql_Cursor=Mysql_Connection.cursor()
-
 def Create_Table():
     Mysql_Cursor.execute("use Library")
     Mysql_Cursor.execute("CREATE TABLE if not exists Users (  \
@@ -58,8 +57,8 @@ Card_ID INT NOT NULL,\
 borrowing_date DATE NOT NULL,\
 due_date DATE NOT NULL,\
 return_date DATE,\
-FOREIGN KEY (ISBN) REFERENCES Books(ISBN),\
-FOREIGN KEY (Card_ID) REFERENCES Users(Card_id));") 
+FOREIGN KEY (ISBN) REFERENCES Books(ISBN) ON DELETE CASCADE,\
+FOREIGN KEY (Card_ID) REFERENCES Users(Card_id) ON DELETE CASCADE);") 
     Mysql_Connection.commit()
     Mysql_Cursor.execute("CREATE TABLE IF NOT EXISTS Fines (\
 fine_id INT AUTO_INCREMENT PRIMARY KEY,\
@@ -68,8 +67,8 @@ Card_ID INT NOT NULL,\
 fine_amount DECIMAL(10, 2) NOT NULL,\
 fine_date DATE NOT NULL,\
 payment_status BOOLEAN NOT NULL,\
-FOREIGN KEY (borrowing_id) REFERENCES Borrowings(borrowing_id),\
-FOREIGN KEY (Card_ID) REFERENCES Users(Card_id));")
+FOREIGN KEY (borrowing_id) REFERENCES Borrowings(borrowing_id) ON DELETE CASCADE,\
+FOREIGN KEY (Card_ID) REFERENCES Users(Card_id) ON DELETE CASCADE);")
     Mysql_Connection.commit()
 
 def Fill_Table():
@@ -87,7 +86,7 @@ def Fill_Table():
 (1008, 'user8', 'pass789', 'Amanda Taylor', 'amanda@example.com', '1112223333', '234 Pine St', TRUE, '2023-08-01', '2023-12-31', FALSE),\
 (1009, 'user9', 'passabc', 'William Martinez', 'william@example.com', '8887776666', '567 Oak Ave', TRUE, '2023-09-01', '2023-12-31', FALSE),\
 (1010, 'Admin', 'AdminPassword', 'Olivia Hernandez', 'olivia@example.com', '5559994444', '678 Elm Rd', TRUE, '2023-10-01', '2023-12-31', TRUE)\
-")#(1011, 'Clean', 'Password', 'Mayank Kumar', '')")
+")
     Mysql_Connection.commit()
     Mysql_Cursor.execute("INSERT INTO Books (ISBN,title, author, genre, publication_date, rating, location, availability_status) VALUES\
 (100001,'The Great Gatsby', 'F. Scott Fitzgerald', 'Classic', '2021-01-15', 4.2, '8000.1', TRUE),\
